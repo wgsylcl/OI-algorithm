@@ -15,7 +15,7 @@ int main(int argc,char** argv)
 		if(ans[i]==out[i])
 		tot+=2;
 	}
-	fputs("ÒÑÅú¸Ä",fre);
+	fputs("sb",fre);
 	fprintf(fsc,"%d",tot);
 	return 0;
 }

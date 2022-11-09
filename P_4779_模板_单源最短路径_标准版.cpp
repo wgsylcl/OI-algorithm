@@ -41,14 +41,20 @@ void add(int u,int v,int w)
     head[u]=edge_cnt;
     return;
 }
+
+struct node
+{
+    int u,dis;
+    node(int u,int dis):u(u),dis(dis){} 
+};
 struct cmp
 {
-    bool operator()(int a,int b)
+    bool operator()(node n1,node n2)
     {
-        return dis[a]>dis[b];
+        return n1.dis>=n2.dis;
     }
 };
-priority_queue<int,vector<int>,cmp> pro;
+priority_queue<node,vector<node>,cmp> pro;
 int main()
 {
     n=read(),m=read(),s=read();
@@ -59,6 +65,28 @@ int main()
         add(u,v,w);
         add(v,u,w);
     }
-    
+    dis[s]=0;
+    pro.push(node(s,0));
+    while(!pro.empty())
+    {
+        node tmp=pro.top();
+        int u=tmp.u,d=tmp.dis;
+        pro.pop();
+        if(d!=dis[u]) continue;
+        if(book[u]) continue;
+        book[u]=true;
+        for(int i=head[u];i;i=nex[i])
+        {
+            int v=E[i].v,w=E[i].w;
+            if(dis[v]>dis[u]+w)
+            {
+                dis[v]=dis[u]+w;
+                if(!book[v])
+                pro.push(node(v,dis[v]));
+            }
+        }
+    }
+    for(int i=1;i<=n;i++)
+    write(dis[i]),putchar(' ');
     return 0;
 }

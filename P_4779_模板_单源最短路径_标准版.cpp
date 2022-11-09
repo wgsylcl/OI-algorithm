@@ -51,7 +51,7 @@ struct cmp
 {
     bool operator()(node n1,node n2)
     {
-        return n1.dis>=n2.dis;
+        return n1.dis>n2.dis;
     }
 };
 priority_queue<node,vector<node>,cmp> pro;
@@ -63,7 +63,6 @@ int main()
     {
         int u=read(),v=read(),w=read();
         add(u,v,w);
-        add(v,u,w);
     }
     dis[s]=0;
     pro.push(node(s,0));

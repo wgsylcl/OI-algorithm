@@ -1,15 +1,13 @@
-#include<iostream>
-#include<cstdio>
-#include<vector>
-#include<bitset>
-#include<string>
+#ifndef TESTLIB_GRAPH
+#define TESTLIB_GRAPH
+#include<bits/stdc++.h>
 #include"testlib.h"
 using namespace std;
 namespace OJ
 {
 typedef unsigned int uint;
-typedef pair<int,int> pint;
-pint default_range(0,0);
+typedef pair<int,int> range;
+range default_range(0,0);
 uint direct=(1<<1);
 uint loop=(1<<2);
 uint weight=(1<<3);
@@ -26,21 +24,17 @@ void printerror(string formot)
 }
 class dsu
 {
-    int* f;
+    vector<int> f;
     int size;
     public:
     dsu(int size=100000):size(size)
     {
-        f=new int[size+10];
-        for(int i=0;i<size+10;i++)
+        f.resize(size+10);
+        for(int i=0;i<=size;i++)
         f[i]=i;
     }
-    ~dsu()
-    {
-        delete[] f;
-    }
     int find(int x)
-    { return x != f[x] ? f[x] = this->find(x) : x; }
+    { return x != f[x] ? f[x] = this->find(f[x]) : x; }
     bool insame(int u,int v)
     { return this->find(u) == this->find(v) ; }
     void merge(int u,int v)
@@ -51,20 +45,22 @@ class graph
     struct edge
     {
         int u,v,w,cost;
-    }*E;
-    vector<edge> _E;
-    int *head,*nex,maxn,maxm,edge_cnt;
-    bitset<100000> book,vis;
+        edge(int u=0,int v=0,int w=0,int cost=0):u(u),v(v),w(w),cost(cost){}
+    };
+    vector<edge> TE,E;
+    vector<int>head,nex;
+    int maxn,maxm,edge_cnt;
+    bitset<1000000> book,vis;
     uint mode;
-    bool _check_loop(int u)
+    bool _check_loop(int u,int fa)
     {
         vis[u]=1;
         book[u]=1;
         for(int i=head[u];i;i=nex[i])
         {
             int v=E[i].v;
-            if(book[v]) return true;
-            else if(_check_loop(v)) return true;
+            if(book[v]==1&&v!=fa) return true;
+            else if(v!=fa&&_check_loop(v,u)) return true;
         }
         book[u]=0;
         return false;
@@ -91,27 +87,20 @@ class graph
         return;
     }
     public:
-    graph(int n,int m,uint mode):maxn(n),maxm(m),mode(mode),head(nullptr),nex(nullptr),edge_cnt(0)
+    graph(int n,int m,uint mode)
     {
+		maxn=n,maxm=m,this->mode=mode,edge_cnt=0;
         if(!have(mode,direct))
         maxm<<=1;
-        if(!((head=new int[maxn+10]{})&&(nex=new int[maxm+10]{})))
-        {
-            if(head!=nullptr) delete[] head,head=nullptr;
-            if(nex!=nullptr) delete[] nex,nex=nullptr;
-            printerror("GRAPH_ERROR:The graph is too big to allocated enough memory for it!");
-        }
-    }
-    ~graph()
-    {
-        if(head!=nullptr) delete[] head,head=nullptr;
-        if(nex!=nullptr) delete[] nex,nex=nullptr;
+        E.resize(maxm+10);
+        head.resize(maxn+10,0);
+        nex.resize(maxm+10,0);
     }
     bool check_loop()
     {
         vis=0,book=0;
         for(int i=1;i<=maxn;i++)
-        if(!vis[i]&&_check_loop(i))
+        if(!vis[i]&&_check_loop(i,0))
         return true; return false;
     }
     bool add(int u,int v,int w=0,int cost=0)
@@ -125,13 +114,13 @@ class graph
         if(u==v&&!have(mode,self_loop))
         {
             if(wall)
-            printerror("GRAPH_ERROR:You mustn't add a edge to make a self loop in a gragh with no self loop!");
+            printerror("GRAPH_ERROR:You mustn't add a edge to make a self loop in a graph with no self loop!");
             return false;
         }
         if(!have(mode,double_edge)&&have_edge(u,v))
         {
             if(wall)
-            printerror("GRAPH_ERROR:You mustn't add a double edge in a gragh with no double edge!");
+            printerror("GRAPH_ERROR:You mustn't add a double edge in a graph with no double edge!");
             return false;
         }
         _add(u,v,w,cost);
@@ -139,7 +128,7 @@ class graph
         {
             _del();
             if(wall)
-            printerror("GRAPH_ERROR:You mustn't add a edge to make a loop in a gragh with no loop!");
+            printerror("GRAPH_ERROR:You mustn't add a edge to make a loop in a graph with no loop!");
             return false;
         }
         if(!have(mode,direct))
@@ -148,7 +137,7 @@ class graph
             {
                 _del();
                 if(wall)
-                printerror("GRAPH_ERROR:You mustn't add a double edge in a gragh with no double edge!");
+                printerror("GRAPH_ERROR:You mustn't add a double edge in a graph with no double edge!");
                 return false;
             }
             _add(v,u,w,cost);
@@ -160,13 +149,13 @@ class graph
                 return false;
             }
         }
-        _E.push_back((edge){u,v,w,cost});
+        TE.push_back(edge(u,v,w,cost));
         return true;
     }
     void display()
     {
-        printf("%d %d\n",maxn,_E.size());
-        for(auto i:_E)
+        shuffle(TE.begin(),TE.end());
+        for(auto& i:TE)
         {
             printf("%d %d",i.u,i.v);
             if(have(mode,weight))
@@ -178,10 +167,10 @@ class graph
         return;
     }
 };
-graph make_graph(int n,int m,uint mode,pint w=default_range,pint cost=default_range)
+graph make_graph(int n,int m,uint mode,range w=default_range,range cost=default_range)
 {
     wall=false;
-    if(!have(mode,direct)&&have(mode,unicom)&&!have(mode,loop)&&n!=m-1)
+    if(!have(mode,direct)&&have(mode,unicom)&&!have(mode,loop)&&n!=m+1)
     {
         printerror("GRAPH_ERROR:It is impossible to make a tree with the number of its edge plus one is not same as the number of its node");
         return graph(0,0,0);
@@ -190,7 +179,7 @@ graph make_graph(int n,int m,uint mode,pint w=default_range,pint cost=default_ra
     {
         if(have(mode,direct))
         {
-            if(m>=(n*(n-1)))
+            if((unsigned long long)(m)>((unsigned long long)(n)*(unsigned long long)(n-1)))
             {
                 printerror("GRAPH_ERROR:Too much edge to make a graph with no double_edge and no self_loop!");
                 return graph(0,0,0);
@@ -198,7 +187,7 @@ graph make_graph(int n,int m,uint mode,pint w=default_range,pint cost=default_ra
         }
         else
         {
-            if(m>=(n*(n-1))/2)
+            if((unsigned long long)(m)>((unsigned long long)(n)*(unsigned long long)(n-1))/2ull)
             {
                 printerror("GRAPH_ERROR:Too much edge to make a graph with no double_edge and no self_loop!");
                 return graph(0,0,0);
@@ -212,21 +201,41 @@ graph make_graph(int n,int m,uint mode,pint w=default_range,pint cost=default_ra
         for(int i=1;i<n;i++)
         {
             start:
-            int u=rnd.next(1,n),v=rnd.next(1,n);
-            if(u==v||tmp.insame(u,v)) goto start;
-            if(!ret.add(u,v)) goto start;
+            int u=rnd.next(1,n);int v=rnd.next(1,n);int _w=rnd.next(w.first,w.second);int _cost=rnd.next(cost.first,cost.second);
+            if(tmp.insame(u,v)) goto start;
+            if(!ret.add(u,v,_w,_cost)) goto start;
             tmp.merge(u,v);
             m--;
         }
     }
+    if(m>0)
     while(m--)
     {
         _start:
-        int u=rnd.next(1,n),v=rnd.next(1,n),_w=rnd.next(w.first,w.second),_cost=rnd.next(w.first,w.second);
+        int u=rnd.next(1,n);int v=rnd.next(1,n);int _w=rnd.next(w.first,w.second);int _cost=rnd.next(cost.first,cost.second);
         if(!ret.add(u,v,_w,_cost))
         goto _start;
     }
     wall=true;
     return ret;
 }
+graph make_chain(int n,uint mode=unicom,range w=default_range,range cost=default_range)
+{
+    graph ret(n,n-1,mode);
+    for(int i=1;i<n;i++)
+    ret.add(i,i+1,rnd.next(w.first,w.second),rnd.next(cost.first,cost.second));
+    return ret;
 }
+graph make_flower(int n,int center=1,uint mode=unicom,range w=default_range,range cost=default_range)
+{
+    graph ret(n,n-1,mode);
+    for(int i=1;i<=n;i++) if(i!=center)
+    ret.add(i,center,rnd.next(w.first,w.second),rnd.next(cost.first,cost.second));
+    return ret;
+}
+graph make_tree(int n,uint mode=unicom,range w=default_range,range cost=default_range)
+{
+    return make_graph(n,n-1,mode,w,cost);
+}
+}
+#endif
